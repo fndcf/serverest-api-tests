@@ -1,0 +1,83 @@
+name: Postman API Tests
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  api-tests:
+    name: Run Postman Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: postman/package.json
+
+      - name: Instalar Newman e reporters
+        working-directory: ./postman
+        run: npm install
+
+      - name: Executar testes Postman
+        working-directory: ./postman
+        run: |
+          npm run test:ci
+
+      - name: Gerar relatório HTML
+        working-directory: ./postman
+        if: always()
+        run: npm run test:report
+
+      - name: Upload relatório HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report-html
+          path: postman/newman-report.html
+          retention-days: 30
+
+      - name: Upload relatório JSON
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report-json
+          path: postman/newman-results.json
+          retention-days: 30
+
+      - name: Upload relatório JUnit
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report-junit
+          path: postman/newman-junit.xml
+          retention-days: 30
+
+      - name: Publicar resultados dos testes
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: postman/newman-junit.xml
+
+      - name: Resumo dos Testes
+        if: always()
+        run: |
+          echo "## Resultado dos Testes Postman" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Testes executados com sucesso" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Relatórios disponíveis nos artefatos:" >> $GITHUB_STEP_SUMMARY
+          echo "- newman-report-html (visualização completa)" >> $GITHUB_STEP_SUMMARY
+          echo "- newman-report-json (dados estruturados)" >> $GITHUB_STEP_SUMMARY
+          echo "- newman-report-junit (integração CI/CD)" >> $GITHUB_STEP_SUMMARY
