@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: "0 6 * * *"
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   api-tests:
     name: Run Postman Tests
@@ -56,20 +61,6 @@ jobs:
           path: postman/newman-results.json
           retention-days: 30
 
-      - name: Upload relatório JUnit
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: newman-report-junit
-          path: postman/newman-junit.xml
-          retention-days: 30
-
-      - name: Publicar resultados dos testes
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: postman/newman-junit.xml
-
       - name: Resumo dos Testes
         if: always()
         run: |
@@ -80,4 +71,3 @@ jobs:
           echo "Relatórios disponíveis nos artefatos:" >> $GITHUB_STEP_SUMMARY
           echo "- newman-report-html (visualização completa)" >> $GITHUB_STEP_SUMMARY
           echo "- newman-report-json (dados estruturados)" >> $GITHUB_STEP_SUMMARY
-          echo "- newman-report-junit (integração CI/CD)" >> $GITHUB_STEP_SUMMARY
