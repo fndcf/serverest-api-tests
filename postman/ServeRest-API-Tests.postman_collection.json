@@ -1,0 +1,1099 @@
+{
+  "info": {
+    "_postman_id": "serverest-api-tests",
+    "name": "ServeRest API Tests",
+    "description": "Collection de testes automatizados para a API ServeRest.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Login com Sucesso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Validar status code",
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Validar mensagem de sucesso",
+                  "pm.test(\"Mensagem é 'Login realizado com sucesso'\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Login realizado com sucesso\");",
+                  "});",
+                  "",
+                  "// Validar token JWT",
+                  "pm.test(\"Token JWT é retornado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.authorization).to.exist;",
+                  "    pm.expect(jsonData.authorization).to.include(\"Bearer\");",
+                  "});",
+                  "",
+                  "// Salvar token para próximas requisições",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", jsonData.authorization);",
+                  "",
+                  "// Validar estrutura do token (header.payload.signature)",
+                  "pm.test(\"Token tem 3 partes (JWT válido)\", function () {",
+                  "    const token = jsonData.authorization.replace(\"Bearer \", \"\");",
+                  "    const parts = token.split(\".\");",
+                  "    pm.expect(parts.length).to.eql(3);",
+                  "});",
+                  "",
+                  "// Validar JSON Schema",
+                  "const schema = {",
+                  "    \"type\": \"object\",",
+                  "    \"required\": [\"message\", \"authorization\"],",
+                  "    \"properties\": {",
+                  "        \"message\": { \"type\": \"string\" },",
+                  "        \"authorization\": { ",
+                  "            \"type\": \"string\",",
+                  "            \"pattern\": \"^Bearer .+\"",
+                  "        }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test(\"Schema JSON válido\", function () {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "// Validar tempo de resposta (SLA)",
+                  "pm.test(\"Tempo de resposta menor que 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Garantir que temos um usuário válido",
+                  "pm.collectionVariables.set(\"email\", \"pedropaulo@qa123.com.br\");",
+                  "pm.collectionVariables.set(\"password\", \"teste\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Realiza login com credenciais válidas e obtém token JWT."
+          },
+          "response": []
+        },
+        {
+          "name": "Login com Email Inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de erro para credenciais inválidas\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Email e/ou senha inválidos\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"emailinexistente@teste.com\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Tenta fazer login com email não cadastrado."
+          },
+          "response": []
+        },
+        {
+          "name": "Login com Senha Incorreta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de erro para senha incorreta\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Email e/ou senha inválidos\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"senhaerrada123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Tenta fazer login com senha incorreta."
+          },
+          "response": []
+        },
+        {
+          "name": "Login sem Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo email\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"teste123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Tenta fazer login sem informar email."
+          },
+          "response": []
+        },
+        {
+          "name": "Login sem Senha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo password\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.password).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Tenta fazer login sem informar senha."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de autenticação e obtenção de token JWT."
+    },
+    {
+      "name": "Usuários - Criação",
+      "item": [
+        {
+          "name": "Criar Usuário com Sucesso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de sucesso\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Cadastro realizado com sucesso\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID do usuário é retornado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData._id).to.exist;",
+                  "    pm.expect(jsonData._id).to.not.be.empty;",
+                  "    ",
+                  "    // Salvar ID para próximos testes",
+                  "    pm.collectionVariables.set(\"usuario_id\", jsonData._id);",
+                  "});",
+                  "",
+                  "// Validar JSON Schema",
+                  "const schema = {",
+                  "    \"type\": \"object\",",
+                  "    \"required\": [\"message\", \"_id\"],",
+                  "    \"properties\": {",
+                  "        \"message\": { \"type\": \"string\" },",
+                  "        \"_id\": { \"type\": \"string\", \"minLength\": 1 }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test(\"Schema JSON válido\", function () {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"Tempo de resposta menor que 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Gerar email único para evitar conflito",
+                  "const randomEmail = `teste_${Date.now()}@qa.com`;",
+                  "pm.collectionVariables.set(\"random_email\", randomEmail);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Fulano da Silva\",\n  \"email\": \"{{random_email}}\",\n  \"password\": \"teste123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Cria um novo usuário com dados válidos."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário com Email Duplicado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de email duplicado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Este email já está sendo usado\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Outro Usuário\",\n  \"email\": \"{{random_email}}\",\n  \"password\": \"teste123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Tenta criar usuário com email já cadastrado."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário sem Nome",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo nome\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.nome).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"semnome@teste.com\",\n  \"password\": \"teste123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Valida campo obrigatório: nome."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário sem Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo email\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Ciclano\",\n  \"password\": \"teste123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Valida campo obrigatório: email."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário com Email Inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para formato de email\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Email Inválido\",\n  \"email\": \"fulano123\",\n  \"password\": \"teste123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Valida formato do email."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário sem Senha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo password\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.password).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Beltrano\",\n  \"email\": \"beltrano@teste.com\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Valida campo obrigatório: password."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário sem Administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Erro de validação para campo administrador\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.administrador).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Paulo João\",\n  \"email\": \"paulojoao@teste.com\",\n  \"password\": \"teste123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Valida campo obrigatório: administrador."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de criação de usuários com validações."
+    },
+    {
+      "name": "Usuários - Listagem",
+      "item": [
+        {
+          "name": "Listar Todos os Usuários",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta contém lista de usuários\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.usuarios).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Resposta contém quantidade\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.quantidade).to.exist;",
+                  "    pm.expect(jsonData.quantidade).to.be.a('number');",
+                  "});",
+                  "",
+                  "// Validar JSON Schema",
+                  "const schema = {",
+                  "    \"type\": \"object\",",
+                  "    \"required\": [\"quantidade\", \"usuarios\"],",
+                  "    \"properties\": {",
+                  "        \"quantidade\": { \"type\": \"integer\", \"minimum\": 0 },",
+                  "        \"usuarios\": {",
+                  "            \"type\": \"array\",",
+                  "            \"items\": {",
+                  "                \"type\": \"object\",",
+                  "                \"required\": [\"nome\", \"email\", \"password\", \"administrador\", \"_id\"],",
+                  "                \"properties\": {",
+                  "                    \"nome\": { \"type\": \"string\" },",
+                  "                    \"email\": { \"type\": \"string\" },",
+                  "                    \"password\": { \"type\": \"string\" },",
+                  "                    \"administrador\": { \"type\": \"string\", \"enum\": [\"true\", \"false\"] },",
+                  "                    \"_id\": { \"type\": \"string\" }",
+                  "                }",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test(\"Schema JSON válido\", function () {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"Tempo de resposta menor que 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"]
+            },
+            "description": "Lista todos os usuários cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Usuários por Nome",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Usuários filtrados contêm o nome buscado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.usuarios && jsonData.usuarios.length > 0) {",
+                  "        jsonData.usuarios.forEach(usuario => {",
+                  "            pm.expect(usuario.nome).to.include(\"Fulano\");",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios?nome=Fulano",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"],
+              "query": [
+                {
+                  "key": "nome",
+                  "value": "Fulano"
+                }
+              ]
+            },
+            "description": "Filtra usuários por nome."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Usuários Administradores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Todos os usuários são administradores\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.usuarios && jsonData.usuarios.length > 0) {",
+                  "        jsonData.usuarios.forEach(usuario => {",
+                  "            pm.expect(usuario.administrador).to.eql(\"true\");",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios?administrador=true",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios"],
+              "query": [
+                {
+                  "key": "administrador",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Filtra apenas usuários administradores."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de listagem e filtros de usuários."
+    },
+    {
+      "name": "Usuários - Busca por ID",
+      "item": [
+        {
+          "name": "Buscar Usuário por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Dados do usuário são retornados\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.nome).to.exist;",
+                  "    pm.expect(jsonData.email).to.exist;",
+                  "    pm.expect(jsonData._id).to.exist;",
+                  "});",
+                  "",
+                  "// Validar JSON Schema",
+                  "const schema = {",
+                  "    \"type\": \"object\",",
+                  "    \"required\": [\"nome\", \"email\", \"password\", \"administrador\", \"_id\"],",
+                  "    \"properties\": {",
+                  "        \"nome\": { \"type\": \"string\" },",
+                  "        \"email\": { \"type\": \"string\" },",
+                  "        \"password\": { \"type\": \"string\" },",
+                  "        \"administrador\": { \"type\": \"string\", \"enum\": [\"true\", \"false\"] },",
+                  "        \"_id\": { \"type\": \"string\" }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test(\"Schema JSON válido\", function () {",
+                  "    pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"Tempo de resposta menor que 1000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{usuario_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "{{usuario_id}}"]
+            },
+            "description": "Busca usuário por ID específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Usuário com ID Inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de usuário não encontrado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Usuário não encontrado\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/idinexistente123",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "idinexistente123"]
+            },
+            "description": "Tenta buscar usuário com ID que não existe."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de busca de usuário por ID."
+    },
+    {
+      "name": "Usuários - Atualização",
+      "item": [
+        {
+          "name": "Atualizar Usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de sucesso\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Registro alterado com sucesso\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Gerar novo email único para atualização",
+                  "const randomEmail = `atualizado_${Date.now()}@qa.com`;",
+                  "pm.collectionVariables.set(\"updated_email\", randomEmail);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Nome Atualizado\",\n  \"email\": \"{{updated_email}}\",\n  \"password\": \"novasenha123\",\n  \"administrador\": \"true\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{usuario_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "{{usuario_id}}"]
+            },
+            "description": "Atualiza dados de um usuário existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Usuário via PUT (ID Inexistente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de cadastro realizado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Cadastro realizado com sucesso\");",
+                  "});",
+                  "",
+                  "pm.test(\"ID do novo usuário é retornado\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData._id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const randomEmail = `put_${Date.now()}@qa.com`;",
+                  "pm.collectionVariables.set(\"put_email\", randomEmail);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Usuário Criado via PUT\",\n  \"email\": \"{{put_email}}\",\n  \"password\": \"teste123\",\n  \"administrador\": \"false\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/usuarios/id_inexistente_put",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "id_inexistente_put"]
+            },
+            "description": "PUT em ID inexistente cria novo usuário."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de atualização de usuários."
+    },
+    {
+      "name": "Usuários - Exclusão",
+      "item": [
+        {
+          "name": "Excluir Usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de sucesso\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Registro excluído com sucesso\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{usuario_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "{{usuario_id}}"]
+            },
+            "description": "Exclui um usuário existente."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Usuário com ID Inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code é 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Mensagem de nenhum registro excluído\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Nenhum registro excluído\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/id_inexistente_delete",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "id_inexistente_delete"]
+            },
+            "description": "Tenta excluir usuário com ID inexistente."
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes de exclusão de usuários."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://serverest.dev",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuario_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "random_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "fulano@qa.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "teste123",
+      "type": "string"
+    },
+    {
+      "key": "updated_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "put_email",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

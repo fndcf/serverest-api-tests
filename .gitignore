@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Relatórios (não versionar)
+postman/newman-report.html
+postman/newman-results.json
+postman/newman-junit.xml
+
+# Maven
+serverest-api-tests/target/
+serverest-api-tests/.mvn/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
