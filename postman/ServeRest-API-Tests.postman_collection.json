@@ -75,7 +75,7 @@
               "script": {
                 "exec": [
                   "// Garantir que temos um usuário válido",
-                  "pm.collectionVariables.set(\"email\", \"pedropaulo@qa123.com.br\");",
+                  "pm.collectionVariables.set(\"email\", \"fulano@qa.com\");",
                   "pm.collectionVariables.set(\"password\", \"teste\");"
                 ],
                 "type": "text/javascript"
